@@ -1,0 +1,43 @@
+<head>
+    <title>Stock</title>
+</head>
+
+<body ng-app="StockApp"
+      ng-controller="StockCtrl">
+
+<nav class="navbar navbar-inverse">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">台股</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="form-group">
+                <input class="form-control" placeholder="搜尋股票代號或名稱" type="text" ng-model="$parent.searchStockKeyword"/>
+            </div>
+            <table class="table table-striped" ng-show="stocksInSearch.length!=0">
+                <tr ng-repeat="stock in stocksInSearch">
+                    <td>
+                        <div style="margin: 5px">
+                            <span ng-bind="stock.ch"></span>
+                            <span>-</span>
+                            <span ng-bind="stock.n"></span>
+                            <span class="pull-right btn btn-xs btn-primary"> > </span>
+                        </div>
+                        <div class="clearfix"></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="col-md-9">
+
+        </div>
+    </div>
+</div>
+</body>
