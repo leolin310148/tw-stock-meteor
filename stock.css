@@ -2,3 +2,14 @@
 .navbar{
     border-radius: 0px;
 }
+
+
+.price-up{
+    color:red;
+}
+.price-down{
+    color:green;
+}
+.price-no{
+    color:yellow;
+}

@@ -15,6 +15,7 @@
 
 <div class="container">
 
+
     <div class="row">
         <div class="col-md-3">
             <div class="form-group">
@@ -27,7 +28,9 @@
                             <span ng-bind="stock.ch"></span>
                             <span>-</span>
                             <span ng-bind="stock.n"></span>
-                            <span class="pull-right btn btn-xs btn-primary"> > </span>
+                            <span class="pull-right btn btn-xs btn-default"
+                                  ng-disabled="isSubscribed(stock)"
+                                  ng-click="addToSubscribe(stock)"> > </span>
                         </div>
                         <div class="clearfix"></div>
                     </td>
@@ -36,7 +39,41 @@
         </div>
 
         <div class="col-md-9">
-
+            <div class="row">
+                <span>加權指數：</span>
+                <span ng-bind="tseT00.lastPrice"
+                      ng-class="getPriceCss(tseT00)"></span>
+                <span>&nbsp;&nbsp;</span>
+                <span ng-bind="getPriceDiff(tseT00)"
+                      ng-class="getPriceCss(tseT00)"></span>
+                <span>&nbsp;&nbsp;</span>
+                <span ng-bind="tseT00.totalTradeCount/100.0"></span>
+                <span>億</span>
+            </div>
+            <hr/>
+            <div class="row">
+                <div ng-repeat="s in subscribeStocks">
+                    <div class="col-md-3">
+                        <div class="panel panel-default">
+                            <button class="pull-right btn btn-xs btn-danger" ng-click="unsubscribe(s)">&times;</button>
+                            <div>
+                                <div>
+                                    <span ng-bind="s.ch"></span>
+                                    <span>&nbsp;</span>
+                                    <span ng-bind="s.n"></span>
+                                </div>
+                                <div>
+                                    <span ng-class="getPriceCss(s.priceInfo)" ng-bind="s.priceInfo.lastPrice"></span>
+                                    <span>&nbsp;&nbsp;</span>
+                                    <span ng-class="getPriceCss(s.priceInfo)" ng-bind="s.priceInfo.diff"></span>
+                                    <span>&nbsp;&nbsp;</span>
+                                    <span ng-class="getPriceCss(s.priceInfo)" ng-bind="s.priceInfo.diffRange"></span><span>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
