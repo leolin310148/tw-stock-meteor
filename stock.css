@@ -1,15 +1,30 @@
 /* CSS declarations go here */
-.navbar{
+.navbar {
     border-radius: 0px;
 }
 
+.price-up {
+    color: red;
+}
 
-.price-up{
-    color:red;
+.price-down {
+    color: green;
 }
-.price-down{
-    color:green;
+
+.price-no {
+    color: yellow;
 }
-.price-no{
-    color:yellow;
+
+.loginUi {
+    padding-top: 15px;
 }
+
+.loginUi #login-sign-in-link, .loginUi #login-name-link {
+    color: white;
+    text-decoration: none;
+}
+
+.icon-button {
+    cursor: pointer;
+}
+
