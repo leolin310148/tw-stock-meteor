@@ -42,54 +42,21 @@ if Meteor.isServer
           {$set: {info: mapPriceInfo(JSON.parse(res.content).msgArray[0])}}
         )
     , 2500)
-    Meteor.http.get "http://mis.twse.com.tw/stock/api/getIndustry.jsp", (err, res)->
-      JSON.parse(res.content).tse.forEach (industry)->
-        Meteor.http.get "http://mis.twse.com.tw/stock/api/getCategory.jsp?ex=tse&i=" + industry.code, (err, res)->
-          stocks = JSON.parse(res.content).msgArray.filter (stock)-> stock.ch.length <= 7
-          stocks.forEach (stock)-> stock.ch = stock.ch.replace(".tw", "")
-          stocks
-          .filter (stock)-> StockCollection.findOne({ch: stock.ch}) == undefined
-          .map (stock)-> {ch: stock.ch, name: stock.n, info: {}, subscribers: []}
-          .forEach (stock)-> StockCollection.insert stock
-
-          if stocks.length > 0
-            chs = stocks.map((stock)-> "tse_" + stock.ch + ".tw").reduce((ch1, ch2)-> ch1 + "|" + ch2)
-            config = {
-              headers: {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-                'Accept-Encoding': 'gzip, deflate, sdch'
-                'Accept-Language': 'zh-TW,zh;q=0.8,en-US;q=0.6,en;q=0.4,zh-CN;q=0.2,de;q=0.2'
-                'Connection': 'keep-alive'
-                'Host': 'mis.twse.com.tw'
-                'Upgrade-Insecure-Requests': '1'
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36'
-              }
-            }
-            Meteor.setInterval(()->
-              Meteor.http.get "http://mis.twse.com.tw/stock/fibest.jsp", config, (err, res)->
-                cookie = eval(res.headers['set-cookie'])[0].split(';')[0]
-                configWithCookie = {
-                  headers: {
-                    'Connection': 'keep-alive'
-                    'Host': 'mis.twse.com.tw'
-                    'Upgrade-Insecure-Requests': '1'
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36'
-                    'Cookie': cookie
-                    'Referer': 'http://mis.twse.com.tw/stock/fibest.jsp'
-                  }
-                }
-                url = "http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=" + chs + "&json=1&delay=0"
-                Meteor.http.get url, configWithCookie, (err, res)->
-                  if(res == null)
-                    console.log(url, err)
-                  else
-                    JSON.parse(res.content).msgArray.forEach (priceInfo)->
-                      StockCollection.update(
-                        {ch: priceInfo.ch.replace(".tw", "")},
-                        {$set: {info: mapPriceInfo(priceInfo, true)}}
-                      )
-
-            , 10000)
+    Meteor.http.get "http://api.leolin.me/stocks", (err, res)->
+      stocks = JSON.parse(res.content)
+      stocks.forEach (stock)-> stock.ch = stock.ch.replace(".tw", "")
+      stocks
+      .map (stock)-> {ch: stock.ch, name: stock.n, info: {}, subscribers: []}
+      .forEach (stock)-> StockCollection.insert stock
+      chs = stocks.map((stock)-> stock.ch)
+      Meteor.setInterval(()->
+        Meteor.http.post "http://api.leolin.me/prices", {data: chs}, (err, res)->
+          JSON.parse(res.content).forEach (priceInfo)->
+            StockCollection.update(
+              {ch: priceInfo.ch.replace(".tw", "")},
+              {$set: {info: mapPriceInfo(priceInfo, true)}}
+            )
+      , 10000)
 
 toFloatAntToFixed = (value, fix)->
   value = parseFloat(value)
