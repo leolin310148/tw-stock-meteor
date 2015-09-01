@@ -6,8 +6,10 @@ if Meteor.isClient
   angular.module('StockApp', ['angular-meteor'])
   .controller('StockCtrl', ['$scope', '$meteor'
       ($scope, $meteor)->
-        $scope.stocksInSearch = $meteor.collection ()->
-          StockCollection.find($scope.getReactively('keywordQuery'), {sort: {ch: 1}})
+        refreshStocksInSearch = ()->
+          $scope.stocksInSearch = $meteor.collection ()->
+            StockCollection.find($scope.getReactively('keywordQuery'), {sort: {ch: 1}})
+        refreshStocksInSearch()
 
         $scope.$watch 'searchStockKeyword', ()->
           if($scope.searchStockKeyword && $scope.searchStockKeyword.length > 0)
@@ -19,9 +21,14 @@ if Meteor.isClient
 
         $scope.t00 = $meteor.collection ()-> TseT00Price.find({})
         $scope.stockPricesToShow = $meteor.collection ()-> StockCollection.find({subscribers: Meteor.userId()})
-        $scope.addToSubscribe = (stock)-> stock.subscribers.push(Meteor.userId())
-        $scope.isSubscribed = (stock)-> _(stock.subscribers).contains(Meteor.userId())
-        $scope.unsubscribe = (stock)-> stock.subscribers = _(stock.subscribers).without(Meteor.userId())
+        $scope.addToSubscribe = (stock)->
+          stock.subscribers.push(Meteor.userId())
+          refreshStocksInSearch()
+        $scope.isSubscribed = (stock)->
+          _(stock.subscribers).contains(Meteor.userId())
+        $scope.unsubscribe = (stock)->
+          stock.subscribers = _(stock.subscribers).without(Meteor.userId())
+          refreshStocksInSearch()
 
         $scope.getPriceCss = (price)->
           if price
@@ -46,8 +53,10 @@ if Meteor.isServer
       stocks = JSON.parse(res.content)
       stocks.forEach (stock)-> stock.ch = stock.ch.replace(".tw", "")
       stocks
+      .filter (stock)-> StockCollection.find({ch: stock.ch}).count() == 0
       .map (stock)-> {ch: stock.ch, name: stock.n, info: {}, subscribers: []}
       .forEach (stock)-> StockCollection.insert stock
+
       chs = stocks.map((stock)-> stock.ch)
       Meteor.setInterval(()->
         Meteor.http.post "http://api.leolin.me/prices", {data: chs}, (err, res)->
