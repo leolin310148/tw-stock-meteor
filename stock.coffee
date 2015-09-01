@@ -46,8 +46,10 @@ if Meteor.isServer
       stocks = JSON.parse(res.content)
       stocks.forEach (stock)-> stock.ch = stock.ch.replace(".tw", "")
       stocks
+      .filter (stock)-> StockCollection.find({ch: stock.ch}).count() == 0
       .map (stock)-> {ch: stock.ch, name: stock.n, info: {}, subscribers: []}
       .forEach (stock)-> StockCollection.insert stock
+
       chs = stocks.map((stock)-> stock.ch)
       Meteor.setInterval(()->
         Meteor.http.post "http://api.leolin.me/prices", {data: chs}, (err, res)->
