@@ -5,14 +5,19 @@
 <body ng-app="StockApp"
       ng-controller="StockCtrl">
 
+
 <nav class="navbar navbar-inverse">
     <div class="container">
         <div class="navbar-header">
             <a class="navbar-brand" href="#">台股</a>
         </div>
 
-        <div class="loginUi">
+        <div class="navbar-nav loginUi">
             <meteor-include src="loginButtons"></meteor-include>
+        </div>
+        <div class="navbar-nav userProfile" ng-show="userProfile!=null">
+            <span>資金：</span>
+            <span ng-bind="userProfile.money"></span>
         </div>
     </div>
 </nav>
@@ -44,6 +49,24 @@
                     </td>
                 </tr>
             </table>
+
+            <div ng-show="holdingStocks.length>0">
+                <h4>我的持股</h4>
+                <table class="table table-striped">
+                    <tr ng-repeat="stock in holdingStocks">
+                        <td>
+                            <div style="margin-top: 5px">
+                                <span ng-bind="stock.ch"></span>
+                                <span ng-bind="stock.name"></span>
+                                <span ng-bind="stock.count"></span>
+                                <span>張</span>
+                                <button class="btn btn-xs btn-success" ng-click="startSelling(stock)">賣出</button>
+                            </div>
+                            <div class="clearfix"></div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </div>
 
         <div class="col-md-10">
@@ -61,6 +84,57 @@
                 </h4>
             </div>
             <hr/>
+            <div class="row" ng-show="buyingStock!=null">
+                <div class="col-md-12">
+                    <form class="form-inline" name="buyingForm">
+                        <div class="form-group-sm">
+                            <label>
+                                買進
+                                <span ng-bind="buyingStock.ch"></span>
+                                <span ng-bind="buyingStock.name"></span>
+                                <input style="width: 80px"
+                                       min="1"
+                                       max="10"
+                                       class="form-control"
+                                       ng-model="buyingCount"
+                                       type="number"/>
+                                張
+                            </label>
+                            <button class="btn btn-xs btn-danger" ng-disabled="buyingForm.$invalid"
+                                    ng-click="doBuying(buyingCount,buyingStock)">送出
+                            </button>
+                            <span ng-show="buyingForm.$invalid">最少1張，最多10張</span>
+                            <button class="btn btn-xs btn-default" ng-click="cancelBuyOrSell()">取消</button>
+                        </div>
+                    </form>
+
+                </div>
+                <hr/>
+            </div>
+            <div class="row" ng-show="sellingStock!=null">
+                <div class="col-md-12">
+                    <form class="form-inline" name="sellingForm">
+                        <div class="form-group-sm">
+                            <label>
+                                賣出
+                                <span ng-bind="sellingStock.ch"></span>
+                                <span ng-bind="sellingStock.name"></span>
+                                <input style="width: 50px" min="1" id="sellingInput"
+                                       class="form-control"
+                                       ng-model="sellingCount" type="number"/>
+                                張
+                            </label>
+                            <button class="btn btn-xs btn-success" ng-disabled="sellingCount>sellingStock.count"
+                                    ng-click="doSelling(sellingCount,sellingStock)">送出
+                            </button>
+                            <span ng-show="sellingForm.$invalid||sellingCount>sellingStock.count">最少1張，最多<span
+                                    ng-bind="sellingStock.count"></span>張</span>
+                            <button class="btn btn-xs btn-default" ng-click="cancelBuyOrSell()">取消</button>
+                        </div>
+                    </form>
+                </div>
+                <hr/>
+            </div>
             <div class="row">
                 <div ng-repeat="stock in stockPricesToShow">
                     <div class="col-md-4">
@@ -98,6 +172,11 @@
                                          ng-bind="stock.info.totalVolume">總量
                                     </div>
                                 </div>
+                                <div class="row" ng-show="userProfile!=null">
+                                    <div class="col-md-3">
+                                        <button class="btn btn-danger btn-xs" ng-click="startBuying(stock)">買進</button>
+                                    </div>
+                                </div>
 
                             </div>
                         </div>
@@ -107,4 +186,5 @@
         </div>
     </div>
 </div>
+
 </body>

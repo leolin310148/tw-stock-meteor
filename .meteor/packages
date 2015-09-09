@@ -9,7 +9,6 @@ autopublish
 insecure
 urigo:angular
 http
-evrei:angular-strap
 mizzao:bootstrap-3
 coffeescript
 accounts-ui

@@ -1,11 +1,13 @@
 StockCollection = new Mongo.Collection("Stocks")
 TseT00Price = new Mongo.Collection("TseT00Price")
+StockHolderCollection = new Mongo.Collection("StockHolders")
+
 if Meteor.isClient
   Accounts.ui.config({passwordSignupFields: "USERNAME_ONLY"})
 
   angular.module('StockApp', ['angular-meteor'])
-  .controller('StockCtrl', ['$scope', '$meteor'
-      ($scope, $meteor)->
+  .controller('StockCtrl', ['$scope', '$meteor', '$rootScope'
+      ($scope, $meteor, $rootScope)->
         refreshStocksInSearch = ()->
           $scope.stocksInSearch = $meteor.collection ()->
             StockCollection.find($scope.getReactively('keywordQuery'), {sort: {ch: 1}})
@@ -18,9 +20,12 @@ if Meteor.isClient
                 {ch: {$regex: new RegExp("^" + $scope.searchStockKeyword)}},
                 {name: {$regex: new RegExp($scope.searchStockKeyword)}}
               ]
+          else
+            $scope.keywordQuery = undefined
 
         $scope.t00 = $meteor.collection ()-> TseT00Price.find({})
         $scope.stockPricesToShow = $meteor.collection ()-> StockCollection.find({subscribers: Meteor.userId()})
+
         $scope.addToSubscribe = (stock)->
           stock.subscribers.push(Meteor.userId())
           refreshStocksInSearch()
@@ -36,10 +41,92 @@ if Meteor.isClient
             if price.diff > 0 then return "price-up"
             if price.diff < 0 then return "price-down"
 
+        refreshUserProfile = ()->
+          if(Meteor.userId())
+            $meteor.call("getCurrentUserProfile", Meteor.userId()).then((profile)->
+              $scope.userProfile = profile
+            )
+          else
+            $scope.userProfile = null
+        $meteor.autorun($rootScope, refreshUserProfile)
+
+        #買進
+        $scope.doBuying = (buyingCount, stock)->
+          selector = {
+            userId: Meteor.userId(),
+            ch: stock.ch,
+          }
+          holdingStock = StockHolderCollection.findOne(selector)
+          if(holdingStock )
+            count = holdingStock.count + buyingCount
+            StockHolderCollection.update({_id: holdingStock._id}, {$set: {count: count}})
+          else
+            selector.count = buyingCount
+            selector.name = stock.name
+            StockHolderCollection.insert(selector)
+          $scope.buyingStock = null
+          moneyCost = 0 - buyingCount * 1000 * stock.info.currentPrice
+          Meteor.call('addUserMoney', Meteor.userId(), moneyCost)
+          refreshUserProfile()
+
+        #賣出
+        $scope.doSelling = (sellingCount, sellingStock)->
+          selector = {_id: sellingStock._id}
+          if(sellingCount == sellingStock.count)
+            StockHolderCollection.remove(selector)
+          else
+            countToSave = sellingStock.count = sellingCount
+            StockHolderCollection.update(selector, {$set: {count: countToSave}})
+
+          price = StockCollection.findOne({ch: sellingStock.ch}).info.currentPrice
+          $scope.sellingStock = null
+          moneyCost = sellingCount * 1000 * price
+          Meteor.call('addUserMoney', Meteor.userId(), moneyCost)
+          refreshUserProfile()
+
+        $scope.startBuying = (stock)->
+          $scope.buyingStock = stock
+          $scope.buyingCount = null
+
+        $scope.startSelling = (stock)->
+          $("#sellingInput").attr("max", stock.count)
+          $scope.sellingStock = stock
+          $scope.sellingCount = null
+
+        $scope.cancelBuyOrSell = ()->
+          $scope.buyingStock = null
+          $scope.sellingStock = null
+
+        #持股
+        $scope.holdingStocks = $meteor.collection ()->
+          StockHolderCollection.find({userId: Meteor.userId()})
     ])
 
+
 if Meteor.isServer
+  Accounts.onCreateUser((user)->
+    user.profile = {money: 0}
+    user
+  )
+
   Meteor.startup ()->
+    Meteor.methods({
+      getCurrentUserProfile: (id)->
+        user = Meteor.users.findOne({_id: id})
+        if(!user)then return undefined
+        return user.profile
+      addUserMoney: (id, moneyToAdd)->
+        user = Meteor.users.findOne({_id: id})
+        moneyToSave = user.profile.money + moneyToAdd
+        Meteor.users.update({_id: user._id}, {$set: {profile: {money: moneyToSave}}})
+    })
+
+    Meteor.users.find().forEach((user)->
+      if(!user.profile)
+        Meteor.users.update({_id: user._id}, {$set: {profile: {money: 0}}})
+    )
+
+
     if TseT00Price.find({}).count() == 0
       TseT00Price.insert({ch: "t00", info: {}})
     Meteor.setInterval(()->
